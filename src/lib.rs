@@ -2,7 +2,8 @@
 
 use embedded_hal_async::i2c::{AddressMode, I2c, SevenBitAddress};
 
-pub const DEFAULT_ADDRESS_ADAFRUIT: SevenBitAddress = 0x08;
+pub const ADDRESS_TO_GROUND: SevenBitAddress = 0x23;
+pub const ADDRESS_TO_VCC: SevenBitAddress = 0x5C;
 
 #[derive(Debug, Copy, Clone)]
 #[allow(non_camel_case_types)]
@@ -39,7 +40,7 @@ where
 {
     /// Create new BH1750 driver and transition it to its powered-on state
     pub async fn new(i2c: I2C, delay: DELAY) -> Result<Self, E> {
-        Self::new_with_address(i2c, delay, DEFAULT_ADDRESS_ADAFRUIT).await
+        Self::new_with_address(i2c, delay, ADDRESS_TO_GROUND).await
     }
 }
 
@@ -90,6 +91,7 @@ where
         self.send_instruction(Instruction::POWER_ON as u8).await
     }
 
+    /// Requests a measurement, returning the result in Lux units
     pub async fn get_measurement(&mut self, mode: ContinuesMeasurement) -> Result<u32, E> {
         let delay = match mode {
             ContinuesMeasurement::HIHGT_RES => 120,
