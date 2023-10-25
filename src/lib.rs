@@ -1,8 +1,6 @@
 #![no_std]
-extern crate embedded_hal;
 
-use embedded_hal::blocking::delay;
-use embedded_hal::blocking::i2c;
+use embedded_hal_async::i2c::I2c;
 
 #[derive(Debug, Copy, Clone)]
 #[allow(non_camel_case_types)]
@@ -40,8 +38,8 @@ pub struct BH1750<I2C, DELAY> {
 
 impl<I2C, DELAY, E> BH1750<I2C, DELAY>
 where
-    I2C: i2c::WriteRead<Error = E>,
-    DELAY: delay::DelayMs<u32>,
+    I2C: I2c<Error = E>,
+    DELAY: embedded_hal_async::delay::DelayUs,
 {
     /// Create new BH1750 driver
     pub fn new(i2c: I2C, delay: DELAY, address: Address) -> Result<Self, E> {
@@ -53,54 +51,54 @@ where
         Ok(chip)
     }
 
-    pub fn light_one_shot(&mut self, mode: OneTimeMeasurement) -> u32 {
+    pub async fn light_one_shot(&mut self, mode: OneTimeMeasurement) -> u32 {
         let delay = match mode {
             OneTimeMeasurement::HIHGT_RES => 140,
             OneTimeMeasurement::HIHGT_RES2 => 160,
             OneTimeMeasurement::LOW_RES => 18,
         };
         let command = mode as u8;
-        self.send_instruction(command);
-        self.delay.delay_ms(delay);
-        raw_to_lx(self.resive_answer(command))
+        self.send_instruction(command).await;
+        self.delay.delay_ms(delay).await;
+        raw_to_lx(self.resive_answer(command).await)
     }
 
-    pub fn start_measurement(&mut self, mode: ContinuesMeasurement) {
+    pub async fn start_measurement(&mut self, mode: ContinuesMeasurement) {
         let command = mode as u8;
-        self.send_instruction(command);
+        self.send_instruction(command).await;
     }
 
-    pub fn reset(&mut self) {
-        self.send_instruction(Instruction::RESET as u8);
+    pub async fn reset(&mut self) {
+        self.send_instruction(Instruction::RESET as u8).await;
     }
 
-    pub fn power_down(&mut self) {
-        self.send_instruction(Instruction::POWER_DOWN as u8);
+    pub async fn power_down(&mut self) {
+        self.send_instruction(Instruction::POWER_DOWN as u8).await;
     }
 
-    pub fn power_on(&mut self) {
-        self.send_instruction(Instruction::POWER_ON as u8);
+    pub async fn power_on(&mut self) {
+        self.send_instruction(Instruction::POWER_ON as u8).await;
     }
 
-    pub fn get_measurement(&mut self, mode: ContinuesMeasurement) -> u32 {
+    pub async fn get_measurement(&mut self, mode: ContinuesMeasurement) -> u32 {
         let delay = match mode {
             ContinuesMeasurement::HIHGT_RES => 120,
             ContinuesMeasurement::HIHGT_RES2 => 120,
             ContinuesMeasurement::LOW_RES => 16,
         };
         let command = mode as u8;
-        self.delay.delay_ms(delay);
-        raw_to_lx(self.resive_answer(command))
+        self.delay.delay_ms(delay).await;
+        raw_to_lx(self.resive_answer(command).await)
     }
 
-    fn send_instruction(&mut self, instr: u8) {
+    async fn send_instruction(&mut self, instr: u8) {
         let mut buffer = [0];
         let _ = self
             .com
             .write_read(self.address as u8, &[instr], &mut buffer);
     }
 
-    fn resive_answer(&mut self, instr: u8) -> u16 {
+    async fn resive_answer(&mut self, instr: u8) -> u16 {
         let mut data: [u8; 2] = [0; 2];
         let _ = self.com.write_read(self.address as u8, &[instr], &mut data);
         let raw_answer: u16 = ((data[0] as u16) << 8) | data[1] as u16;
