@@ -37,9 +37,9 @@ where
     I2C: I2c<SevenBitAddress, Error = E>,
     DELAY: embedded_hal_async::delay::DelayUs,
 {
-    /// Create new BH1750 driver
-    pub fn new(i2c: I2C, delay: DELAY) -> Result<Self, E> {
-        Self::new_with_address(i2c, delay, DEFAULT_ADDRESS_ADAFRUIT)
+    /// Create new BH1750 driver and transition it to its powered-on state
+    pub async fn new(i2c: I2C, delay: DELAY) -> Result<Self, E> {
+        Self::new_with_address(i2c, delay, DEFAULT_ADDRESS_ADAFRUIT).await
     }
 }
 
@@ -49,14 +49,15 @@ where
     I2C: I2c<A, Error = E>,
     DELAY: embedded_hal_async::delay::DelayUs,
 {
-    /// Create new BH1750 driver
-    pub fn new_with_address(i2c: I2C, delay: DELAY, address: A) -> Result<Self, E> {
+    /// Create new BH1750 driver and transition it to its powered-on state
+    pub async fn new_with_address(i2c: I2C, delay: DELAY, address: A) -> Result<Self, E> {
         // AddressMode;
-        let chip = BH1750 {
+        let mut chip = BH1750 {
             bus: i2c,
             delay,
             address,
         };
+        chip.power_on().await?;
         Ok(chip)
     }
 
