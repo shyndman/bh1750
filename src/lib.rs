@@ -26,7 +26,7 @@ pub enum ContinuesMeasurement {
     LOW_RES = 0b0001_0011,    // 4    lx resolution
 }
 pub struct BH1750<I2C, A, DELAY> {
-    com: I2C,
+    bus: I2C,
     delay: DELAY,
     address: A,
 }
@@ -52,7 +52,7 @@ where
     pub fn new_with_address(i2c: I2C, delay: DELAY, address: A) -> Result<Self, E> {
         // AddressMode;
         let chip = BH1750 {
-            com: i2c,
+            bus: i2c,
             delay,
             address,
         };
@@ -101,12 +101,12 @@ where
 
     async fn send_instruction(&mut self, instr: u8) {
         let mut buffer = [0];
-        let _ = self.com.write_read(self.address, &[instr], &mut buffer);
+        let _ = self.bus.write_read(self.address, &[instr], &mut buffer);
     }
 
     async fn resive_answer(&mut self, instr: u8) -> u16 {
         let mut data: [u8; 2] = [0; 2];
-        let _ = self.com.write_read(self.address, &[instr], &mut data);
+        let _ = self.bus.write_read(self.address, &[instr], &mut data);
         let raw_answer: u16 = ((data[0] as u16) << 8) | data[1] as u16;
         raw_answer
     }
