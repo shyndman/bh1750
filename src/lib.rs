@@ -70,7 +70,7 @@ where
         let command = mode as u8;
         self.send_instruction(command).await?;
         self.delay.delay_ms(delay).await;
-        Ok(raw_to_lx(self.resive_answer(command).await?))
+        Ok(raw_to_lx(self.receive_answer(command).await?))
     }
 
     pub async fn start_measurement(&mut self, mode: ContinuesMeasurement) -> Result<(), E> {
@@ -98,7 +98,7 @@ where
         };
         let command = mode as u8;
         self.delay.delay_ms(delay).await;
-        Ok(raw_to_lx(self.resive_answer(command).await?))
+        Ok(raw_to_lx(self.receive_answer(command).await?))
     }
 
     async fn send_instruction(&mut self, instr: u8) -> Result<(), E> {
@@ -108,7 +108,7 @@ where
             .await
     }
 
-    async fn resive_answer(&mut self, instr: u8) -> Result<u16, E> {
+    async fn receive_answer(&mut self, instr: u8) -> Result<u16, E> {
         let mut data: [u8; 2] = [0; 2];
         self.bus
             .write_read(self.address, &[instr], &mut data)
